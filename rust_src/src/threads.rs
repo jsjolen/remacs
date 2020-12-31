@@ -7,12 +7,14 @@ use crate::{
     lisp::{ExternalPtr, LispObject},
     remacs_sys::Qthreadp,
     remacs_sys::{
-        current_thread as current_thread_pointer, pvec_type, thread_state, Lisp_Type, SPECPDL_INDEX,
+        current_thread as current_thread_pointer, handler, handlertype, push_handler, pvec_type,
+        thread_state, Lisp_Type, SPECPDL_INDEX,
     },
     vectors::LispVectorlikeRef,
 };
 
 pub type ThreadStateRef = ExternalPtr<thread_state>;
+pub type HandlerRef = ExternalPtr<handler>;
 
 pub struct ThreadState {}
 

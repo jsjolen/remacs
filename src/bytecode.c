@@ -354,17 +354,25 @@ exec_byte_code (Lisp_Object bytestr, Lisp_Object vector, Lisp_Object maxdepth,
   EMACS_INT stack_items = XFASTINT (maxdepth) + 1;
   USE_SAFE_ALLOCA;
   void *alloc;
+  // Allocate `stack_items' number of LispObjects, immediately followed by `bytestr_length' spare bytes
   SAFE_ALLOCA_LISP_EXTRA (alloc, stack_items, bytestr_length);
+  // Size of our stack
   ptrdiff_t item_bytes = stack_items * word_size;
+  // Point towards start of bytecode (which is equal to `alloc')
+  // ptr_bounds_clip(x, _) = x when not debugging.
   Lisp_Object *stack_base = ptr_bounds_clip (alloc, item_bytes);
+  // Top of stack items
   Lisp_Object *top = stack_base;
+  // Ceiling of stack
   Lisp_Object *stack_lim = stack_base + stack_items;
   unsigned char *bytestr_data = alloc;
   bytestr_data = ptr_bounds_clip (bytestr_data + item_bytes, bytestr_length);
+  // Why do we make a copy?
   memcpy (bytestr_data, SDATA (bytestr), bytestr_length);
-  unsigned char const *pc = bytestr_data;
-  ptrdiff_t count = SPECPDL_INDEX ();
+  unsigned char const *pc = bytestr_data; // Start at bytestr data
+  ptrdiff_t count = SPECPDL_INDEX (); // wot
 
+  // Hol-up, I thought args_template could be a list too?
   if (!NILP (args_template))
     {
       eassert (INTEGERP (args_template));
@@ -380,9 +388,9 @@ exec_byte_code (Lisp_Object bytestr, Lisp_Object vector, Lisp_Object maxdepth,
       ptrdiff_t pushedargs = min (nonrest, nargs);
       for (ptrdiff_t i = 0; i < pushedargs; i++, args++)
 	PUSH (*args);
-      if (nonrest < nargs)
+      if (nonrest < nargs) // Supplied with *a lot* of args, fill out with rest
 	PUSH (Flist (nargs - nonrest, args));
-      else
+      else // (&optional x y z &rest r) where x,y,z pushed on, r = '() so not pushed on
 	for (ptrdiff_t i = nargs - rest; i < nonrest; i++)
 	  PUSH (Qnil);
     }
@@ -480,6 +488,7 @@ exec_byte_code (Lisp_Object bytestr, Lisp_Object vector, Lisp_Object maxdepth,
 	varref:
 	  {
 	    Lisp_Object v1 = vectorp[op], v2;
+	    // WTF?
 	    if (!SYMBOLP (v1)
 		|| XSYMBOL (v1)->u.s.redirect != SYMBOL_PLAINVAL
 		|| (v2 = SYMBOL_VAL (XSYMBOL (v1)), EQ (v2, Qunbound)))
